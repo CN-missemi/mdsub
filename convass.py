@@ -2,7 +2,7 @@ import os
 import io
 import re
 
-filename = ['src.md', 'target.ass']
+filename = ['src.srt', 'target.ass']
 
 # Parts of md syntax
 match_rules = {'H1': r'#\s+(.*?)\n', 'Emptyline': r'\s*\n', 'Numid': r'\d+', \
@@ -33,8 +33,8 @@ meta_events = ['[Events]', 'Format: Layer, Start, End, Style, Name, '
 	'MarginL, MarginR, MarginV, Effect, Text']
 
 # STYLES
-plain_style = ['Plain', 'Candara', '14', '&H00FFFFFF', '&H000000FF', '&HFF000000', '&HFF000000', \
-	'0', '0', '0', '0', '100', '100', '0', '0', '1', '0', '0', '2', '15', '15', '10', '1']
+plain_style = ['Plain', 'Candara', '14', '&H00FFFFFF', '&H000000FF', '&H66000000', '&HFF000000', \
+	'0', '0', '0', '0', '100', '100', '0', '0', '3', '1', '0', '2', '5', '5', '10', '1']
 
 # code_style = []
 
