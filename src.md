@@ -2,7 +2,7 @@
 
 600
 00:00:02,790 --> 00:00:05,730
-of `those`, for example. So, here, my
+这里是 of `those`, 比如 **example**. an*dal*ongwo的混合rd and *a* short,
 
 601
 00:00:05,730 --> 00:00:08,590
