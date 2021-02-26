@@ -20,6 +20,11 @@ You can use **a small part of** the Markdown syntax for your subtitle texts.
 
 - `Code`
 
+- // Comments
+
+- Multi  
+line
+
 ## Usage
 
 - Put your file under the same directory of `convass.py` script.
