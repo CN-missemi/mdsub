@@ -32,29 +32,32 @@ dirname = os.path.dirname(__file__) + '\\'
 filename = ['src.srt', 'target.ass']
 
 # Parts of md syntax
-match_rules = {'H1': r'#\s+(.*?)\n', 'Emptyline': r'\s*\n', 'Numid': r'\d+', \
-	'Srttimemark': r'(\d*:\d{2}:\d{2}),(\d{3})\s*-->\s*(\d*:\d{2}:\d{2}),(\d{3})', \
-	'Bold': r'\*\*(.*?)\*\*', 'Italic2': r'\s+_(.*?)_\s+', \
-	'Bold2': r'\s+__(.*?)\*\*\s+', 'Italic': r'\*(.*?)\*', \
+match_rules = {'H1': r'#\s+(.*?)\n', 'Emptyline': r'\s*\n', 'Numid': r'\d+',
+	'Srttimemark': r'(\d*:\d{2}:\d{2}),(\d{3})\s*-->\s*(\d*:\d{2}:\d{2}),(\d{3})',
+	'Bold': r'\*\*(.*?)\*\*', 'Italic2': r'\s+_(.*?)_\s+',
+	'Bold2': r'\s+__(.*?)\*\*\s+', 'Italic': r'\*(.*?)\*',
+	'Comment': r'\A//\s(.*?)\n',
+	'wtf': r'\n//\s(.*?)\n',
 	'Strikeout': r'~~(.*?)~~', 'Code': r'`(.*?)`',
-	'CHN': r'([\u2014\u2026\u3001\u3002\u3007-\u3011\u3014-\u301b\u30fb\u4e00-\u9fa5\uff01-\uff65]+)', \
-	'fbk0': r'([\u3400-\u4DBF\u9fa6-\u9ffc\uFA0E\uFA0F\uFA11\uFA13\uFA14\uFA1F\uFA21\uFA23\uFA24\uFA27-\uFA29]+)', \
-	'fbk2': r'([\U00020000-\U0002A6DF]+)', \
+	'Han': r'([\u2014\u2026\u3001\u3002\u3007-\u3011\u3014-\u301b\u3040-\u30ff\u4e00-\u9fa5\uff01-\uff65][\s\u2014\u2026\u3001\u3002\u3007-\u3011\u3014-\u301b\u3040-\u30ff\u4e00-\u9fa5\uff01-\uff65]*[\u2014\u2026\u3001\u3002\u3007-\u3011\u3014-\u301b\u3040-\u30ff\u4e00-\u9fa5\uff01-\uff65])',
+	'fbk0': r'([\u3400-\u4DBF\u9fa6-\u9ffc\uFA0E\uFA0F\uFA11\uFA13\uFA14\uFA1F\uFA21\uFA23\uFA24\uFA27-\uFA29]+)',
+	'fbk2': r'([\U00020000-\U0002A6DF]+)',
 	'fbk3': r'([\U00030000–\U0003134F]+)'
-  }
+}
 
 # ASS Code Effect for text
 # Code color -> B7F5F7 as RGB and F7F5B7 as BGR
 ass_codes = {
-	'Bold': r'{\\b1}\g<1>{\\b0}', 'Italic': r'{\\i1}\g<1>{\\i0}', \
-	'Strikeout': r'{\\s1}\g<1>{\\s0}', 'Code': r'{\\fnFira Code}{\\c&HF7F5B7&}\g<1>{\\r}', \
-	'CHN': r'{\\fnGlowSansSC Normal Medium}\g<1>{\\r}', \
-	'fbk0':r'{\\fnGlowSansSC Normal Medium}\g<1>{\\r}', \
-	'fbk2':r'{\\fnGlowSansSC Normal Medium}\g<1>{\\r}', \
-	'fbk3':r'{\\fnTH-Tshyn-P1}\g<1>{\\r}'}
+	'Bold': r'{\\b1}\g<1>{\\b0}', 'Italic': r'{\\i1}\g<1>{\\i0}',
+	'Strikeout': r'{\\s1}\g<1>{\\s0}', 'Code': r'{\\fnFira Code}{\\c&HF7F5B7&}\g<1>{\\r}',
+	'Han': r'{\\fnGlowSansSC Normal Medium}\g<1>{\\r}',
+	'fbk0':r'{\\fnGlowSansSC Normal Medium}\g<1>{\\r}',
+	'fbk2':r'{\\fnGlowSansSC Normal Medium}\g<1>{\\r}',
+	'fbk3':r'{\\fnTH-Tshyn-P1}\g<1>{\\r}'
+}
 
 # STYLES
-plain_style = ['Plain', 'Candara', 14, '&H00FFFFFF', '&H000000FF', '&H66000000', '&HFF000000', \
+plain_style = ['Plain', 'Candara', 14, '&H00FFFFFF', '&H000000FF', '&H66000000', '&HFF000000',
 	0, 0, 0, 0, 100, 100, 0, 0, 3, 1, 0, 2, 5, 5, 10, 1]
 
 # DIALOG_TEMPLATE
@@ -82,20 +85,26 @@ def Write_ass(title: str, styles: list, subtext: list):
 		tg.write(target_ass)
 
 		tg['Events']['Dialogue'] = ''
+		tg['Events']['Comment'] = ''
 		for text in subtext:
-			tg.set('Events', 'Dialogue', ','.join(dialog_template) % text)
+			dial = re.compile(r'\n//.*\n', re.MULTILINE)
+			tmp1 = dial.sub(r'\n', text[3])
+			tmp2 = re.compile(r'\n', re.MULTILINE)
+			cur = (text[0], text[1], text[2], tmp2.sub(r'\\N', tmp1) + '\n')
+			tg.set('Events', 'Dialogue', ','.join(dialog_template) % cur)
 			tg.write_line(target_ass, 'Events', 'Dialogue')
 	
 	print('Success.')
 	
 def Markdown_parse(base: str):
+	base = base[:-1]
 	bold_coded = re.sub(match_rules['Bold'], ass_codes['Bold'], base)
 	bold_coded = re.sub(match_rules['Bold2'], ass_codes['Bold'], bold_coded)
 	italic_coded = re.sub(match_rules['Italic'], ass_codes['Italic'], bold_coded)
 	italic_coded = re.sub(match_rules['Italic2'], ass_codes['Italic'], italic_coded)
 	strike_coded = re.sub(match_rules['Strikeout'], ass_codes['Strikeout'], italic_coded)
 	syntax_coded = re.sub(match_rules['Code'], ass_codes['Code'], strike_coded)
-	gbk_coded = re.sub(match_rules['CHN'], ass_codes['CHN'], syntax_coded)
+	gbk_coded = re.sub(match_rules['Han'], ass_codes['Han'], syntax_coded)
 	fbk0_coded = re.sub(match_rules['fbk0'], ass_codes['fbk0'], gbk_coded)
 	fbk2_coded = re.sub(match_rules['fbk2'], ass_codes['fbk2'], fbk0_coded)
 	fbk3_coded = re.sub(match_rules['fbk3'], ass_codes['fbk3'], fbk2_coded)
@@ -111,8 +120,12 @@ with open(dirname + filename[0], 'r', encoding='utf-8') as src_md:
 	
 	subtext: list = []
 	
+	dialog_begin = 0
 	for line in src_md:
 		if re.match(match_rules['Emptyline'], line):
+			if dialog_begin != 0:
+				subtext.append( (st_time, ed_time, 'Plain', block) )
+				block = ''
 			dialog_begin = 1
 		
 		elif re.match(match_rules['Numid'], line) and (dialog_begin == 1):
@@ -128,7 +141,17 @@ with open(dirname + filename[0], 'r', encoding='utf-8') as src_md:
 				ed_time = ed_time[1:-1]
 			dialog_begin = 3
 			
-		elif dialog_begin == 3:		
-			subtext.append( (st_time, ed_time, 'Plain', Markdown_parse(line)) )
+		elif dialog_begin == 3:
+			if not re.match(match_rules['Comment'], line):
+				block = Markdown_parse(line)
+			else:
+				block = line[2:]
+			dialog_begin = 4
+
+		elif dialog_begin == 4:
+			if not re.match(match_rules['Comment'], line):
+				block += '\n' + Markdown_parse(line)
+			else:
+				block += '\n' + line
 	
 	Write_ass(title, [plain_style], subtext)
