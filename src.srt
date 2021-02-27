@@ -2,7 +2,7 @@
 
 600
 00:00:02,790 --> 00:00:05,730
-这里是 of `those`, 比如 **example**. an*dal*ongwo的混合rd and *a* short,
+这里是 of `those`, 比如 **example**. an*dal*ongwo的{混合221  r2**d混**x} and *a* short,
 
 601
 00:00:05,730 --> 00:00:08,590
@@ -23,6 +23,9 @@ cursor goes to the ~~beginning~~ of the line,
 
 604
 00:00:31,130 --> 00:00:38,880
-复制：一行……能不能不止一行？
 // 悄悄地注释一行
+复制：一行……能不能不止一行？
+// 悄悄地注释两行
 两行正常吗？Mixing with english ~~混杂其他格式~~
+两行正常吗？Mixing with english ~~混杂其他格式~~
+// 悄悄地注释三行

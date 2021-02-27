@@ -2,7 +2,9 @@ import io
 import re
 import configparser
 import os
+import argparse
 
+FILENAME = ['src.srt', 'target.ass']
 
 class AssWriter(configparser.ConfigParser):
 	def __init__(self):
@@ -28,8 +30,6 @@ class AssWriter(configparser.ConfigParser):
 				value = ""
 			fp.write("{}: {}\n".format(key, value))
 
-dirname = os.path.dirname(__file__) + '\\'
-filename = ['src.srt', 'target.ass']
 
 # Parts of md syntax
 match_rules = {'H1': r'#\s+(.*?)\n', 'Emptyline': r'\s*\n', 'Numid': r'\d+',
@@ -42,7 +42,8 @@ match_rules = {'H1': r'#\s+(.*?)\n', 'Emptyline': r'\s*\n', 'Numid': r'\d+',
 	'Han': r'([\u2014\u2026\u3001\u3002\u3007-\u3011\u3014-\u301b\u3040-\u30ff\u4e00-\u9fa5\uff01-\uff65][\s\u2014\u2026\u3001\u3002\u3007-\u3011\u3014-\u301b\u3040-\u30ff\u4e00-\u9fa5\uff01-\uff65]*[\u2014\u2026\u3001\u3002\u3007-\u3011\u3014-\u301b\u3040-\u30ff\u4e00-\u9fa5\uff01-\uff65])',
 	'fbk0': r'([\u3400-\u4DBF\u9fa6-\u9ffc\uFA0E\uFA0F\uFA11\uFA13\uFA14\uFA1F\uFA21\uFA23\uFA24\uFA27-\uFA29]+)',
 	'fbk2': r'([\U00020000-\U0002A6DF]+)',
-	'fbk3': r'([\U00030000–\U0003134F]+)'
+	'fbk3': r'([\U00030000–\U0003134F]+)',
+	'Curlybrace': r'\{(.*?)\}',
 }
 
 # ASS Code Effect for text
@@ -50,10 +51,11 @@ match_rules = {'H1': r'#\s+(.*?)\n', 'Emptyline': r'\s*\n', 'Numid': r'\d+',
 ass_codes = {
 	'Bold': r'{\\b1}\g<1>{\\b0}', 'Italic': r'{\\i1}\g<1>{\\i0}',
 	'Strikeout': r'{\\s1}\g<1>{\\s0}', 'Code': r'{\\fnFira Code}{\\c&HF7F5B7&}\g<1>{\\r}',
-	'Han': r'{\\fnGlowSansSC Normal Medium}\g<1>{\\r}',
+	'Han': r'{\\fnSimHei}\g<1>{\\r}',
 	'fbk0':r'{\\fnGlowSansSC Normal Medium}\g<1>{\\r}',
 	'fbk2':r'{\\fnGlowSansSC Normal Medium}\g<1>{\\r}',
-	'fbk3':r'{\\fnTH-Tshyn-P1}\g<1>{\\r}'
+	'fbk3':r'{\\fnTH-Tshyn-P1}\g<1>{\\r}',
+	'Curlybrace': r'\g<1>',
 }
 
 # STYLES
@@ -64,7 +66,7 @@ plain_style = ['Plain', 'Candara', 14, '&H00FFFFFF', '&H000000FF', '&H66000000',
 dialog_template = ['0', '%s', '%s', '%s', '', '0', '0', '0', '', '%s']
 
 
-def Write_ass(title: str, styles: list, subtext: list):
+def Write_ass(title: str, styles: list[str], subtext: list[str], input_path: str, output_file: str):
 	tg = AssWriter()
 	tg['Script Info'] = {
 		'Title': title,
@@ -81,7 +83,7 @@ def Write_ass(title: str, styles: list, subtext: list):
 	tg['Events'] = {
 		'Format': 'Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
 	}
-	with open(dirname + filename[1], 'w', encoding='utf-8') as target_ass:
+	with open(input_path + output_file, 'w', encoding='utf-8') as target_ass:
 		tg.write(target_ass)
 
 		tg['Events']['Dialogue'] = ''
@@ -94,11 +96,12 @@ def Write_ass(title: str, styles: list, subtext: list):
 			tg.set('Events', 'Dialogue', ','.join(dialog_template) % cur)
 			tg.write_line(target_ass, 'Events', 'Dialogue')
 	
-	print('Success.')
+	print('ASS written.')
 	
-def Markdown_parse(base: str):
+def Markdown_parse(base: str) -> str:
 	base = base[:-1]
-	bold_coded = re.sub(match_rules['Bold'], ass_codes['Bold'], base)
+	curly_coded = re.sub(match_rules['Curlybrace'], ass_codes['Curlybrace'], base)
+	bold_coded = re.sub(match_rules['Bold'], ass_codes['Bold'], curly_coded)
 	bold_coded = re.sub(match_rules['Bold2'], ass_codes['Bold'], bold_coded)
 	italic_coded = re.sub(match_rules['Italic'], ass_codes['Italic'], bold_coded)
 	italic_coded = re.sub(match_rules['Italic2'], ass_codes['Italic'], italic_coded)
@@ -110,48 +113,68 @@ def Markdown_parse(base: str):
 	fbk3_coded = re.sub(match_rules['fbk3'], ass_codes['fbk3'], fbk2_coded)
 	return fbk3_coded
 
-
-with open(dirname + filename[0], 'r', encoding='utf-8') as src_md:
-	try:
-		title = re.match(match_rules['H1'], src_md.readline()).group(1)
-	except AttributeError:
-		title = 'Mdsub Default Title'
-		src_md.seek(0, io.SEEK_SET)
+def Get_CLI_args() -> list:
+	invoke_args = argparse.ArgumentParser(description="Convert subtitles files with markdown syntax to ass")
+	invoke_args.add_argument("-i", "--input", default=FILENAME[0], help=f"Source filename, {FILENAME[0]} by default.", 
+		type=str, required=False)
+	invoke_args.add_argument("-o", "--output", default=FILENAME[1], help=f"Output ass filename, {FILENAME[1]} by default.",
+		type=str, required=False)
+	return invoke_args.parse_args()
 	
-	subtext: list = []
+def main():
+	parsed_args = Get_CLI_args()
+	input_path = os.path.dirname(__file__) + '\\'
+	input_file = parsed_args.input
+	output_file = parsed_args.output
 	
-	dialog_begin = 0
-	for line in src_md:
-		if re.match(match_rules['Emptyline'], line):
-			if dialog_begin != 0:
-				subtext.append( (st_time, ed_time, 'Plain', block) )
-				block = ''
-			dialog_begin = 1
+	with open(input_path + input_file, 'r', encoding='utf-8') as src_md:
+		try:
+			title = re.match(match_rules['H1'], src_md.readline()).group(1)
+		except AttributeError:
+			title = 'Mdsub Default Title'
+			src_md.seek(0, io.SEEK_SET)
 		
-		elif re.match(match_rules['Numid'], line) and (dialog_begin == 1):
-			dialog_begin = 2
+		subtext: list = []
 		
-		elif re.match(match_rules['Srttimemark'], line) and (dialog_begin == 2):
-			matched = re.match(match_rules['Srttimemark'], line)
-			st_time = matched.group(1) + '.' + matched.group(2)
-			ed_time = matched.group(3) + '.' + matched.group(4)
-			if st_time[0] == '0':
-				st_time = st_time[1:-1]
-			if ed_time[0] == '0':
-				ed_time = ed_time[1:-1]
-			dialog_begin = 3
+		dialog_begin = 0
+		for line in src_md:
+			if re.match(match_rules['Emptyline'], line):
+				if dialog_begin != 0:
+					subtext.append( (st_time, ed_time, 'Plain', block) )
+					block = ''
+				dialog_begin = 1
 			
-		elif dialog_begin == 3:
-			if not re.match(match_rules['Comment'], line):
-				block = Markdown_parse(line)
-			else:
-				block = line[2:]
-			dialog_begin = 4
+			elif re.match(match_rules['Numid'], line) and (dialog_begin == 1):
+				dialog_begin = 2
+			
+			elif re.match(match_rules['Srttimemark'], line) and (dialog_begin == 2):
+				matched = re.match(match_rules['Srttimemark'], line)
+				st_time = matched.group(1) + '.' + matched.group(2)
+				ed_time = matched.group(3) + '.' + matched.group(4)
+				if st_time[0] == '0':
+					st_time = st_time[1:-1]
+				else:
+					st_time = st_time[0:-1]
+				if ed_time[0] == '0':
+					ed_time = ed_time[1:-1]
+				else:
+					ed_time = ed_time[0:-1]
+				dialog_begin = 3
+				
+			elif dialog_begin == 3:
+				if not re.match(match_rules['Comment'], line):
+					block = Markdown_parse(line)
+				else:
+					block = line[2:]
+				dialog_begin = 4
 
-		elif dialog_begin == 4:
-			if not re.match(match_rules['Comment'], line):
-				block += '\n' + Markdown_parse(line)
-			else:
-				block += '\n' + line
-	
-	Write_ass(title, [plain_style], subtext)
+			elif dialog_begin == 4:
+				if not re.match(match_rules['Comment'], line):
+					block += '\n' + Markdown_parse(line)
+				else:
+					block += '\n' + line
+		
+		Write_ass(title, [plain_style], subtext, input_path, output_file)
+
+if __name__ == "__main__":
+	main()

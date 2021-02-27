@@ -29,6 +29,14 @@ line
 
 - Put your file under the same directory of `convass.py` script.
 
-- Modify the `[5]` line of the script, and set the file name / extend name to be yours.
+- Read script help by execute `py convass.py -h`.
 
 - Run the script.
+
+## Notice
+
+Chinese character use `SimHei(黑体)` font by default;
+
+English character use `Candara` font by default;
+
+Codes use `Fira Code Regular` (a.n.a. `Fira Code`) by default.
